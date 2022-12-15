@@ -119,73 +119,62 @@ impl Decoder for ObjectCreateRequest {
     where
         T: Buf,
     {
-        let mut typ: u8 = 0;
-        typ.decode(src, version)?;
+        let typ = u8::decode_from(src, version)?;
         tracing::trace!("decoded type: {}", typ);
 
-        match typ {
+        let request = match typ {
             TopicSpec::CREATE_TYPE => {
                 tracing::trace!("detected topic");
-                let mut request = TopicSpec::default();
-                request.decode(src, version)?;
-                *self = Self::Topic(request);
-                Ok(())
+                let request = TopicSpec::decode_from(src, version)?;
+                Self::Topic(request)
             }
 
             TableFormatSpec::CREATE_TYPE => {
                 tracing::trace!("detected table");
-                let mut request = TableFormatSpec::default();
-                request.decode(src, version)?;
-                *self = Self::TableFormat(request);
-                Ok(())
+                let request = TableFormatSpec::decode_from(src, version)?;
+                Self::TableFormat(request)
             }
 
             CustomSpuSpec::CREATE_TYPE => {
                 tracing::trace!("detected custom spu");
-                let mut request = CustomSpuSpec::default();
-                request.decode(src, version)?;
-                *self = Self::CustomSpu(request);
-                Ok(())
+                let request = CustomSpuSpec::decode_from(src, version)?;
+                Self::CustomSpu(request)
             }
 
             SpuGroupSpec::CREATE_TYPE => {
                 tracing::trace!("detected custom spu");
-                let mut request = SpuGroupSpec::default();
-                request.decode(src, version)?;
-                *self = Self::SpuGroup(request);
-                Ok(())
+                let request = SpuGroupSpec::decode_from(src, version)?;
+                Self::SpuGroup(request)
             }
 
             SmartModuleSpec::CREATE_TYPE => {
                 tracing::trace!("detected smartmodule");
-                let mut request = SmartModuleSpec::default();
-                request.decode(src, version)?;
-                *self = Self::SmartModule(request);
-                Ok(())
+                let request = SmartModuleSpec::decode_from(src, version)?;
+                Self::SmartModule(request)
             }
 
             ManagedConnectorSpec::CREATE_TYPE => {
                 tracing::trace!("detected connector");
-                let mut request = ManagedConnectorSpec::default();
-                request.decode(src, version)?;
-                *self = Self::ManagedConnector(request);
-                Ok(())
+                let request = ManagedConnectorSpec::decode_from(src, version)?;
+                Self::ManagedConnector(request)
             }
 
             DerivedStreamSpec::CREATE_TYPE => {
                 tracing::trace!("detected derivedstream");
-                let mut request = DerivedStreamSpec::default();
-                request.decode(src, version)?;
-                *self = Self::DerivedStream(request);
-                Ok(())
+                let request = DerivedStreamSpec::decode_from(src, version)?;
+                Self::DerivedStream(request)
             }
 
             // Unexpected type
-            _ => Err(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                format!("invalid create type {:#?}", typ),
-            )),
-        }
+            _ => {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    format!("invalid create type {:#?}", typ),
+                ))
+            }
+        };
+        *self = request;
+        Ok(())
     }
 }
 

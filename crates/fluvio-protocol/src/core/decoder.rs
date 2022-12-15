@@ -44,8 +44,7 @@ where
     where
         T: Buf,
     {
-        let mut len: i32 = 0;
-        len.decode(src, version)?;
+        let len = i32::decode_from(src, version)?;
 
         trace!("decoding Vec len:{}", len);
 
@@ -66,8 +65,7 @@ where
     M: Default + Decoder,
 {
     for _ in 0..len {
-        let mut value = <M>::default();
-        value.decode(src, version)?;
+        let value = <M>::decode_from(src, version)?;
         item.push(value);
     }
 
@@ -82,15 +80,14 @@ where
     where
         T: Buf,
     {
-        let mut some = false;
-        some.decode(src, version)?;
-        if some {
-            let mut value = <M>::default();
-            value.decode(src, version)?;
-            *self = Some(value)
+        let some = bool::decode_from(src, version)?;
+        let option = if some {
+            let value = <M>::decode_from(src, version)?;
+            Some(value)
         } else {
-            *self = None
-        }
+            None
+        };
+        *self = option;
         Ok(())
     }
 }
@@ -116,15 +113,12 @@ where
     where
         T: Buf,
     {
-        let mut len: u16 = 0;
-        len.decode(src, version)?;
+        let len = u16::decode_from(src, version)?;
 
         let mut map: BTreeMap<K, V> = BTreeMap::new();
         for _i in 0..len {
-            let mut key = K::default();
-            key.decode(src, version)?;
-            let mut value = V::default();
-            value.decode(src, version)?;
+            let key = K::decode_from(src, version)?;
+            let value = V::decode_from(src, version)?;
             map.insert(key, value);
         }
 
@@ -413,8 +407,7 @@ mod test {
     #[test]
     fn test_decode_i18_not_enough() {
         let data = []; // no values
-        let mut value: i8 = 0;
-        let result = value.decode(&mut Cursor::new(&data), 0);
+        let result = i8::decode_from(&mut Cursor::new(&data), 0);
         assert!(result.is_err());
     }
 
@@ -422,17 +415,15 @@ mod test {
     fn test_decode_i8() {
         let data = [0x12];
 
-        let mut value: i8 = 0;
-        let result = value.decode(&mut Cursor::new(&data), 0);
+        let result = i8::decode_from(&mut Cursor::new(&data), 0);
         assert!(result.is_ok());
-        assert_eq!(value, 18);
+        assert_eq!(result.unwrap(), 18);
     }
 
     #[test]
     fn test_decode_u18_not_enough() {
         let data = []; // no values
-        let mut value: u8 = 0;
-        let result = value.decode(&mut Cursor::new(&data), 0);
+        let result = u8::decode_from(&mut Cursor::new(&data), 0);
         assert!(result.is_err());
     }
 
@@ -440,18 +431,16 @@ mod test {
     fn test_decode_u8() {
         let data = [0x12];
 
-        let mut value: u8 = 0;
-        let result = value.decode(&mut Cursor::new(&data), 0);
+        let result = u8::decode_from(&mut Cursor::new(&data), 0);
         assert!(result.is_ok());
-        assert_eq!(value, 18);
+        assert_eq!(result.unwrap(), 18);
     }
 
     #[test]
     fn test_decode_i16_not_enough() {
         let data = [0x11]; // only one value
 
-        let mut value: i16 = 0;
-        let result = value.decode(&mut Cursor::new(&data), 0);
+        let result = i16::decode_from(&mut Cursor::new(&data), 0);
         assert!(result.is_err());
     }
 
@@ -459,18 +448,16 @@ mod test {
     fn test_decode_i16() {
         let data = [0x00, 0x05];
 
-        let mut value: i16 = 0;
-        let result = value.decode(&mut Cursor::new(&data), 0);
+        let result = i16::decode_from(&mut Cursor::new(&data), 0);
         assert!(result.is_ok());
-        assert_eq!(value, 5);
+        assert_eq!(result.unwrap(), 5);
     }
 
     #[test]
     fn test_decode_u16_not_enough() {
         let data = [0x11]; // only one value
 
-        let mut value: u16 = 0;
-        let result = value.decode(&mut Cursor::new(&data), 0);
+        let result = u16::decode_from(&mut Cursor::new(&data), 0);
         assert!(result.is_err());
     }
 
@@ -478,38 +465,34 @@ mod test {
     fn test_decode_u16() {
         let data = [0x00, 0x05];
 
-        let mut value: u16 = 0;
-        let result = value.decode(&mut Cursor::new(&data), 0);
+        let result = u16::decode_from(&mut Cursor::new(&data), 0);
         assert!(result.is_ok());
-        assert_eq!(value, 5);
+        assert_eq!(result.unwrap(), 5);
     }
 
     #[test]
     fn test_decode_option_u16_none() {
         let data = [0x00];
 
-        let mut value: Option<u16> = None;
-        let result = value.decode(&mut Cursor::new(&data), 0);
-        assert!(result.is_ok());
-        assert_eq!(value, None);
+        let Ok(None) = Option::<u16>::decode_from(&mut Cursor::new(&data), 0) else {
+            unreachable!();
+        };
     }
 
     #[test]
     fn test_decode_option_u16_val() {
         let data = [0x01, 0x00, 0x10];
 
-        let mut value: Option<u16> = None;
-        let result = value.decode(&mut Cursor::new(&data), 0);
-        assert!(result.is_ok());
-        assert_eq!(value, Some(16));
+        let Ok(Some(16))= Option::<u16>::decode_from(&mut Cursor::new(&data), 0) else {
+            unreachable!();
+        };
     }
 
     #[test]
     fn test_decode_u32_not_enough() {
         let data = [0x11];
 
-        let mut value: u32 = 0;
-        let result = value.decode(&mut Cursor::new(&data), 0);
+        let result = u32::decode_from(&mut Cursor::new(&data), 0);
         assert!(result.is_err());
     }
 
@@ -517,38 +500,34 @@ mod test {
     fn test_decode_u32() {
         let data = [0x00, 0x00, 0x00, 0x05];
 
-        let mut value: u32 = 0;
-        let result = value.decode(&mut Cursor::new(&data), 0);
-        assert!(result.is_ok());
-        assert_eq!(value, 5);
+        let Ok(5) = u32::decode_from(&mut Cursor::new(&data), 0) else {
+            unreachable!()
+        };
     }
 
     #[test]
     fn test_decode_option_u32_none() {
         let data = [0x00];
 
-        let mut value: Option<u32> = None;
-        let result = value.decode(&mut Cursor::new(&data), 0);
-        assert!(result.is_ok());
-        assert_eq!(value, None);
+        let Ok(None) = Option::<u32>::decode_from(&mut Cursor::new(&data), 0) else {
+            unreachable!();
+        };
     }
 
     #[test]
     fn test_decode_option_u32_val() {
         let data = [0x01, 0x00, 0x00, 0x01, 0x10];
 
-        let mut value: Option<u32> = None;
-        let result = value.decode(&mut Cursor::new(&data), 0);
-        assert!(result.is_ok());
-        assert_eq!(value, Some(272));
+        let Ok(Some(272)) = Option::<u32>::decode_from(&mut Cursor::new(&data), 0) else {
+            unreachable!();
+        };
     }
 
     #[test]
     fn test_decode_u64_not_enough() {
         let data = [0x11];
 
-        let mut value: u64 = 0;
-        let result = value.decode(&mut Cursor::new(&data), 0);
+        let result = u32::decode_from(&mut Cursor::new(&data), 0);
         assert!(result.is_err());
     }
 
@@ -556,38 +535,34 @@ mod test {
     fn test_decode_u64() {
         let data = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05];
 
-        let mut value: u64 = 0;
-        let result = value.decode(&mut Cursor::new(&data), 0);
+        let result = u64::decode_from(&mut Cursor::new(&data), 0);
         assert!(result.is_ok());
-        assert_eq!(value, 5);
+        assert_eq!(result.unwrap(), 5);
     }
 
     #[test]
     fn test_decode_option_u64_none() {
         let data = [0x00];
 
-        let mut value: Option<u64> = None;
-        let result = value.decode(&mut Cursor::new(&data), 0);
-        assert!(result.is_ok());
-        assert_eq!(value, None);
+        let Ok(None) = Option::<u64>::decode_from(&mut Cursor::new(&data), 0)  else {
+            unreachable!();
+        };
     }
 
     #[test]
     fn test_decode_option_u64_val() {
         let data = [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05];
 
-        let mut value: Option<u64> = None;
-        let result = value.decode(&mut Cursor::new(&data), 0);
-        assert!(result.is_ok());
-        assert_eq!(value, Some(5));
+        let Ok(Some(5)) = Option::<u64>::decode_from(&mut Cursor::new(&data), 0) else {
+            unreachable!();
+        };
     }
 
     #[test]
     fn test_decode_i32_not_enough() {
         let data = [0x11, 0x11, 0x00]; // still need one more
 
-        let mut value: i32 = 0;
-        let result = value.decode(&mut Cursor::new(&data), 0);
+        let result = i32::decode_from(&mut Cursor::new(&data), 0);
         assert!(result.is_err());
     }
 
@@ -595,28 +570,25 @@ mod test {
     fn test_decode_i32() {
         let data = [0x00, 0x00, 0x00, 0x10];
 
-        let mut value: i32 = 0;
-        let result = value.decode(&mut Cursor::new(&data), 0);
-        assert!(result.is_ok());
-        assert_eq!(value, 16);
+        let Ok(16) = i32::decode_from(&mut Cursor::new(&data), 0) else {
+            unreachable!();
+        };
     }
 
     #[test]
     fn test_decode_i32_2() {
         let data = [0x00, 0x00, 0x00, 0x01];
 
-        let mut value: i32 = 0;
-        let result = value.decode(&mut Cursor::new(&data), 0);
-        assert!(result.is_ok());
-        assert_eq!(value, 1);
+        let Ok(1) = i32::decode_from(&mut Cursor::new(&data), 0) else {
+            unreachable!();
+        };
     }
 
     #[test]
     fn test_decode_i64_not_enough() {
         let data = [0x11, 0x11, 0x00]; // still need one more
 
-        let mut value: i64 = 0;
-        let result = value.decode(&mut Cursor::new(&data), 0);
+        let result = i64::decode_from(&mut Cursor::new(&data), 0);
         assert!(result.is_err());
     }
 
@@ -624,18 +596,16 @@ mod test {
     fn test_decode_i64() {
         let data = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20];
 
-        let mut value: i64 = 0;
-        let result = value.decode(&mut Cursor::new(&data), 0);
-        assert!(result.is_ok());
-        assert_eq!(value, 32);
+        let Ok(32) = i64::decode_from(&mut Cursor::new(&data), 0) else {
+            unreachable!();
+        };
     }
 
     #[test]
     fn test_decode_invalid_string_not_len() {
         let data = [0x11]; // doesn't have right bytes
 
-        let mut value = String::from("");
-        let result = value.decode(&mut Cursor::new(&data), 0);
+        let result = String::decode_from(&mut Cursor::new(&data), 0);
         assert!(result.is_err());
     }
 
@@ -643,8 +613,7 @@ mod test {
     fn test_decode_invalid_string() {
         let data = [0x00, 0x0a, 0x63]; // len and string doesn't match
 
-        let mut value = String::from("");
-        let result = value.decode(&mut Cursor::new(&data), 0);
+        let result = String::decode_from(&mut Cursor::new(&data), 0);
         assert!(result.is_err());
     }
 
@@ -652,29 +621,27 @@ mod test {
     fn test_decode_null_option_string() {
         let data = [0x00]; // len and string doesn't match
 
-        let mut value: Option<String> = Some(String::from("test"));
-        let result = value.decode(&mut Cursor::new(&data), 0);
-        assert!(result.is_ok());
-        assert!(value.is_none());
+        let Ok(None) = Option::<String>::decode_from(&mut Cursor::new(&data), 0) else {
+            unreachable!()
+        };
     }
 
     #[test]
     fn test_decode_some_option_string() {
         let data = [0x01, 0x00, 0x02, 0x77, 0x6f]; // len and string doesn't match
 
-        let mut value: Option<String> = None;
-        let result = value.decode(&mut Cursor::new(&data), 0);
-        assert!(result.is_ok());
-        assert!(value.is_some());
-        assert_eq!(value.unwrap(), "wo");
+        let Ok(Some(value)) = Option::<String>::decode_from(&mut Cursor::new(&data), 0) else {
+            unreachable!();
+        };
+        assert_eq!(value, "wo");
     }
 
     #[test]
     fn test_decode_string_existing_value() {
         let src = [0x0, 0x7, 0x30, 0x2e, 0x30, 0x2e, 0x30, 0x2e, 0x30];
-        let mut decode_target = "123".to_string();
-        let result = decode_target.decode(&mut Cursor::new(&src), 0);
-        assert!(result.is_ok());
+        let Ok(decode_target) = String::decode_from(&mut Cursor::new(&src), 0) else {
+            unreachable!();
+        };
         assert_eq!(decode_target, "0.0.0.0".to_string());
     }
 
@@ -684,9 +651,9 @@ mod test {
             0x00, 0x0a, 0x63, 0x6f, 0x6e, 0x73, 0x75, 0x6d, 0x65, 0x72, 0x2d, 0x31,
         ];
 
-        let mut value = String::from("");
-        let result = value.decode(&mut Cursor::new(&data), 0);
-        assert!(result.is_ok());
+        let Ok(value) = String::decode_from(&mut Cursor::new(&data), 0) else {
+            unreachable!()
+        };
         assert_eq!(value, "consumer-1");
     }
 
@@ -694,18 +661,27 @@ mod test {
     fn test_decode_bool_not_enough() {
         let data = []; // no values
 
-        let mut value: bool = false;
-        let result = value.decode(&mut Cursor::new(&data), 0);
+        let result = bool::decode_from(&mut Cursor::new(&data), 0);
         assert!(result.is_err());
     }
 
     #[test]
-    fn test_decode_bool() {
+    fn test_decode_bool_false() {
+        let data = [0x0];
+
+        let Ok(value) = bool::decode_from(&mut Cursor::new(&data), 0) else {
+            unreachable!()
+        };
+        assert!(!value);
+    }
+
+    #[test]
+    fn test_decode_bool_true() {
         let data = [0x1];
 
-        let mut value: bool = false;
-        let result = value.decode(&mut Cursor::new(&data), 0);
-        assert!(result.is_ok());
+        let Ok(value) = bool::decode_from(&mut Cursor::new(&data), 0) else {
+            unreachable!()
+        };
         assert!(value);
     }
 
@@ -713,8 +689,7 @@ mod test {
     fn test_decode_bool_invalid_value() {
         let data = [0x23]; // not bool
 
-        let mut value: bool = false;
-        let result = value.decode(&mut Cursor::new(&data), 0);
+        let result = bool::decode_from(&mut Cursor::new(&data), 0);
         assert!(result.is_err());
     }
 
@@ -723,9 +698,9 @@ mod test {
         // array of strings with "test"
         let data = [0, 0, 0, 0x01, 0x00, 0x04, 0x74, 0x65, 0x73, 0x74];
 
-        let mut values: Vec<String> = Vec::new();
-        let result = values.decode(&mut Cursor::new(&data), 0);
-        assert!(result.is_ok());
+        let Ok(values) = Vec::<String>::decode_from(&mut Cursor::new(&data), 0) else {
+            unreachable!()
+        };
         assert_eq!(values.len(), 1);
         let first_str = &values[0];
         assert_eq!(first_str, "test");
@@ -794,10 +769,15 @@ mod test {
         where
             T: Buf,
         {
-            self.value.decode(src, 0)?;
-            if version > 1 {
-                self.value2.decode(src, 0)?;
-            }
+            let record = Self {
+                value: i8::decode_from(src, 0)?,
+                value2: if version > 1 {
+                    i8::decode_from(src, 0)?
+                } else {
+                    0
+                },
+            };
+            *self = record;
             Ok(())
         }
     }

@@ -204,89 +204,72 @@ mod object_macro {
                     {
                         use fluvio_controlplane_metadata::core::Spec;
 
-                        let mut typ = "".to_owned();
-                        typ.decode(src, version)?;
+                        let typ = String::decode_from(src, version)?;
                         tracing::trace!(%typ,"decoded type");
 
-                        match typ.as_ref() {
+                        let obj = match typ.as_ref() {
                             crate::topic::TopicSpec::LABEL => {
                                 tracing::trace!("detected topic");
-                                let mut request = $api::<crate::topic::TopicSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::Topic(request);
-                                return Ok(())
+                                let request = $api::<crate::topic::TopicSpec>::decode_from(src, version)?;
+                                Self::Topic(request)
                             }
 
                             crate::spu::SpuSpec::LABEL  => {
                                 tracing::trace!("detected spu");
-                                let mut request = $api::<crate::spu::SpuSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::Spu(request);
-                                return Ok(())
+                                let request = $api::<crate::spu::SpuSpec>::decode_from(src, version)?;
+                                Self::Spu(request)
                             }
 
                             crate::tableformat::TableFormatSpec::LABEL => {
                                 tracing::trace!("detected tableformat");
-                                let mut request = $api::<crate::tableformat::TableFormatSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::TableFormat(request);
-                                return Ok(())
+                                let request = $api::<crate::tableformat::TableFormatSpec>::decode_from(src, version)?;
+                                Self::TableFormat(request)
                             }
 
                             crate::customspu::CustomSpuSpec::LABEL => {
                                 tracing::trace!("detected custom spu");
-                                let mut request = $api::<crate::customspu::CustomSpuSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::CustomSpu(request);
-                                return Ok(())
+                                let request = $api::<crate::customspu::CustomSpuSpec>::decode_from(src, version)?;
+                                Self::CustomSpu(request)
                             }
 
                             crate::spg::SpuGroupSpec::LABEL => {
                                 tracing::trace!("detected custom spu");
-                                let mut request = $api::<crate::spg::SpuGroupSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::SpuGroup(request);
-                                return Ok(())
+                                let request = $api::<crate::spg::SpuGroupSpec>::decode_from(src, version)?;
+                                Self::SpuGroup(request)
                             }
 
                             crate::smartmodule::SmartModuleSpec::LABEL => {
                                 tracing::trace!("detected smartmodule");
-                                let mut request = $api::<crate::smartmodule::SmartModuleSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::SmartModule(request);
-                                return Ok(())
+                                let request = $api::<crate::smartmodule::SmartModuleSpec>::decode_from(src, version)?;
+                                Self::SmartModule(request)
                             }
 
                             crate::partition::PartitionSpec::LABEL => {
                                 tracing::trace!("detected partition");
-                                let mut request = $api::<crate::partition::PartitionSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::Partition(request);
-                                Ok(())
+                                let request = $api::<crate::partition::PartitionSpec>::decode_from(src, version)?;
+                                Self::Partition(request)
                             }
 
                             crate::connector::ManagedConnectorSpec::LABEL => {
                                 tracing::trace!("detected connector");
-                                let mut request = $api::<crate::connector::ManagedConnectorSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::ManagedConnector(request);
-                                Ok(())
+                                let request = $api::<crate::connector::ManagedConnectorSpec>::decode_from(src, version)?;
+                                Self::ManagedConnector(request)
                             },
 
                             crate::derivedstream::DerivedStreamSpec::LABEL => {
                                 tracing::trace!("detected derivedstream");
-                                let mut request = $api::<crate::derivedstream::DerivedStreamSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::DerivedStream(request);
-                                Ok(())
+                                let request = $api::<crate::derivedstream::DerivedStreamSpec>::decode_from(src, version)?;
+                                Self::DerivedStream(request)
                             }
 
                             // Unexpected type
-                            _ => Err(std::io::Error::new(
+                            _ => return Err(std::io::Error::new(
                                 std::io::ErrorKind::InvalidData,
                                 format!("invalid object type {:#?}", typ),
                             ))
-                        }
+                        };
+                        *self = obj;
+                        Ok(())
                     }
 
                 }
@@ -437,74 +420,61 @@ mod delete_macro {
                     {
                         use fluvio_controlplane_metadata::core::Spec;
 
-                        let mut typ = "".to_owned();
-                        typ.decode(src, version)?;
+                        let typ = String::decode_from(src, version)?;
                         tracing::trace!(%typ,"decoded type");
 
-                        match typ.as_ref() {
+                        let obj = match typ.as_ref() {
                             crate::topic::TopicSpec::LABEL => {
                                 tracing::trace!("detected topic");
-                                let mut request = $api::<crate::topic::TopicSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::Topic(request);
-                                return Ok(())
+                                let request = $api::<crate::topic::TopicSpec>::decode_from(src, version)?;
+                                Self::Topic(request)
                             }
 
                             crate::tableformat::TableFormatSpec::LABEL => {
                                 tracing::trace!("detected tableformat");
-                                let mut request = $api::<crate::tableformat::TableFormatSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::TableFormat(request);
-                                return Ok(())
+                                let request = $api::<crate::tableformat::TableFormatSpec>::decode_from(src, version)?;
+                                Self::TableFormat(request)
                             }
 
                             crate::customspu::CustomSpuSpec::LABEL => {
                                 tracing::trace!("detected custom spu");
-                                let mut request = $api::<crate::customspu::CustomSpuSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::CustomSpu(request);
-                                return Ok(())
+                                let request = $api::<crate::customspu::CustomSpuSpec>::decode_from(src, version)?;
+                                Self::CustomSpu(request)
                             }
 
                             crate::spg::SpuGroupSpec::LABEL => {
                                 tracing::trace!("detected custom spu");
-                                let mut request = $api::<crate::spg::SpuGroupSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::SpuGroup(request);
-                                return Ok(())
+                                let request = $api::<crate::spg::SpuGroupSpec>::decode_from(src, version)?;
+                                Self::SpuGroup(request)
                             }
 
 
                             crate::connector::ManagedConnectorSpec::LABEL => {
                                 tracing::trace!("detected connector");
-                                let mut request = $api::<crate::connector::ManagedConnectorSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::ManagedConnector(request);
-                                Ok(())
+                                let request = $api::<crate::connector::ManagedConnectorSpec>::decode_from(src, version)?;
+                                Self::ManagedConnector(request)
                             },
 
                             crate::smartmodule::SmartModuleSpec::LABEL => {
                                 tracing::trace!("detected smartmodule");
-                                let mut request = $api::<crate::smartmodule::SmartModuleSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::SmartModule(request);
-                                Ok(())
+                                let request = $api::<crate::smartmodule::SmartModuleSpec>::decode_from(src, version)?;
+                                Self::SmartModule(request)
                             },
 
                             crate::derivedstream::DerivedStreamSpec::LABEL => {
                                 tracing::trace!("detected derivedstream");
-                                let mut request = $api::<crate::derivedstream::DerivedStreamSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::DerivedStream(request);
-                                Ok(())
+                                let request = $api::<crate::derivedstream::DerivedStreamSpec>::decode_from(src, version)?;
+                                Self::DerivedStream(request)
                             }
 
                             // Unexpected type
-                            _ => Err(std::io::Error::new(
+                            _ => return Err(std::io::Error::new(
                                 std::io::ErrorKind::InvalidData,
                                 format!("invalid object type {:#?}", typ),
                             ))
-                        }
+                        };
+                        *self = obj;
+                        Ok(())
                     }
 
                 }

@@ -136,8 +136,12 @@ where
     where
         T: Buf,
     {
-        self.header.decode(src, version)?;
-        self.request.decode(src, self.header.api_version())?;
+        let header = RequestHeader::decode_from(src, version)?;
+        let msg = Self {
+            header,
+            request: R::decode_from(src, self.header.api_version())?,
+        };
+        *self = msg;
         Ok(())
     }
 }

@@ -76,13 +76,12 @@ impl Decoder for SmartModuleSpec {
     {
         if version < V2_FORMAT {
             debug!("decoding for smart module spec v1");
-            let mut spec_v1 = SmartModuleSpecV1::default();
-            spec_v1.decode(src, version)?;
+            let spec_v1 = SmartModuleSpecV1::decode_from(src, version)?;
             self.wasm = spec_v1.wasm;
         } else {
-            self.meta.decode(src, version)?;
-            self.summary.decode(src, version)?;
-            self.wasm.decode(src, version)?;
+            self.meta = Option::decode_from(src, version)?;
+            self.summary = Option::decode_from(src, version)?;
+            self.wasm = SmartModuleWasm::decode_from(src, version)?;
         }
 
         Ok(())

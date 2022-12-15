@@ -148,9 +148,9 @@ impl<R> Batch<R> {
         T: Buf,
     {
         trace!("decoding preamble");
-        self.base_offset.decode(src, version)?;
-        self.batch_len.decode(src, version)?;
-        self.header.decode(src, version)?;
+        self.base_offset = Offset::decode_from(src, version)?;
+        self.batch_len = i32::decode_from(src, version)?;
+        self.header = BatchHeader::decode_from(src, version)?;
         Ok(())
     }
 
@@ -265,15 +265,14 @@ impl Batch<RawRecords> {
     pub fn memory_records(&self) -> Result<MemoryRecords, CompressionError> {
         let compression = self.get_compression()?;
 
-        let mut records: MemoryRecords = Default::default();
-        if let Compression::None = compression {
-            records.decode(&mut &self.records.0[..], 0)?;
+        let records = if let Compression::None = compression {
+            MemoryRecords::decode_from(&mut &self.records.0[..], 0)?
         } else {
             let decompressed = compression
                 .uncompress(&self.records.0[..])?
                 .ok_or(CompressionError::UnreachableError)?;
-            records.decode(&mut &decompressed[..], 0)?;
-        }
+            MemoryRecords::decode_from(&mut &decompressed[..], 0)?
+        };
         Ok(records)
     }
 }
@@ -324,7 +323,7 @@ where
             ));
         }
 
-        self.records.decode(&mut buf, version)?;
+        self.records = R::decode_from(&mut buf, version)?;
         Ok(())
     }
 }

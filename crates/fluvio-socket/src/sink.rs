@@ -305,8 +305,7 @@ mod tests {
         assert_eq!(bytes.len(), 7);
         debug!("decoding values");
         let mut src = Cursor::new(&bytes);
-        let mut msg1 = String::new();
-        msg1.decode(&mut src, 0).expect("decode should work");
+        let msg1 = String::decode_from(&mut src, 0).expect("decode should work");
         assert_eq!(msg1, "hello");
 
         Ok(())

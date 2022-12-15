@@ -50,23 +50,18 @@ impl Decoder for Mix {
     where
         T: Buf,
     {
-        let mut value: u8 = 0;
-        value.decode(src, version)?;
-        match value {
-            2 => {
-                *self = Mix::A;
-            }
-            3 => {
-                *self = Mix::C;
-            }
+        let value = u8::decode_from(src, version)?;
+        let mix = match value {
+            2 => Mix::A,
+            3 => Mix::C,
             _ => {
                 return Err(Error::new(
                     ErrorKind::UnexpectedEof,
                     format!("invalid value for Mix: {}", value),
                 ))
             }
-        }
-
+        };
+        *self = mix;
         Ok(())
     }
 }
@@ -120,8 +115,7 @@ fn test_named_encode() {
 #[test]
 fn test_named_decode() {
     let data = vec![0x00, 0x00, 0x0d, 0x00, 0x03, 0x52, 0x65, 0x64];
-    let mut value = NamedEnum::default();
-    value.decode(&mut std::io::Cursor::new(data), 0).unwrap();
+    let value = NamedEnum::decode_from(&mut std::io::Cursor::new(data), 0).unwrap();
     match value {
         NamedEnum::Apple { seeds, color } => {
             assert_eq!(seeds, 13);
@@ -165,8 +159,7 @@ fn test_named_custom_tag_decode() {
     let data = vec![
         0x16, 0x00, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x00, 0x00, 0x00, 0xea,
     ];
-    let mut value = NamedCustomTag::default();
-    value.decode(&mut std::io::Cursor::new(data), 0).unwrap();
+    let value = NamedCustomTag::decode_from(&mut std::io::Cursor::new(data), 0).unwrap();
 
     match value {
         NamedCustomTag::One { a, b } => {
@@ -202,8 +195,7 @@ fn test_multi_unnamed_encode() {
 #[test]
 fn test_multi_unnamed_decode() {
     let data = vec![0x00, 0x00, 0x0d, 0x00, 0x03, 0x52, 0x65, 0x64];
-    let mut value = MultiUnnamedEnum::default();
-    value.decode(&mut std::io::Cursor::new(data), 0).unwrap();
+    let value = MultiUnnamedEnum::decode_from(&mut std::io::Cursor::new(data), 0).unwrap();
 
     match value {
         MultiUnnamedEnum::Apple(num, string) => {
@@ -243,8 +235,7 @@ fn test_multi_unnamed_custom_tag_encode() {
 #[test]
 fn test_multi_unnamed_custom_tag_decode() {
     let data = vec![0x46, 0x16, 0x21, 0x2c];
-    let mut value = MultiUnnamedCustomTag::default();
-    value.decode(&mut std::io::Cursor::new(data), 0).unwrap();
+    let value = MultiUnnamedCustomTag::decode_from(&mut std::io::Cursor::new(data), 0).unwrap();
 
     match value {
         MultiUnnamedCustomTag::Hsv(22, 33, 44) => (),

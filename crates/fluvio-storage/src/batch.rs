@@ -159,7 +159,7 @@ where
         }
 
         let mut cursor = Cursor::new(bytes);
-        self.inner.mut_records().decode(&mut cursor, 0)?;
+        *(self.inner.mut_records()) = R::decode_from(&mut cursor, 0)?;
 
         Ok(())
     }

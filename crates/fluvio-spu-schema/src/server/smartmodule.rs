@@ -191,10 +191,8 @@ mod tests {
     #[test]
     fn test_decode_smartmodulekind() {
         let bytes = vec![0x01];
-        let mut value: SmartModuleKind = Default::default();
-        value
-            .decode(&mut io::Cursor::new(bytes), 0)
-            .expect("should decode");
+        let value =
+            SmartModuleKind::decode_from(&mut io::Cursor::new(bytes), 0).expect("should decode");
         assert!(matches!(value, SmartModuleKind::Map));
     }
 

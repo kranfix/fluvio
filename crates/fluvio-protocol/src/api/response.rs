@@ -40,8 +40,7 @@ where
     where
         T: Buf,
     {
-        let mut correlation_id: i32 = 0;
-        correlation_id.decode(src, version)?;
+        let correlation_id = i32::decode_from(src, version)?;
         trace!("decoded correlation id: {}", correlation_id);
 
         let response = P::decode_from(src, version)?;
@@ -66,8 +65,7 @@ where
 
         // ResponseMessage implementation of fluvio_protocol::storage::FileWrite trait first encodes the length
         // of the ResponseMessage
-        let mut size: i32 = 0;
-        size.decode(&mut src, version)?;
+        let size = i32::decode_from(&mut src, version)?;
         trace!("decoded response size: {} bytes", size);
 
         if src.remaining() < size as usize {

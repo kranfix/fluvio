@@ -256,8 +256,7 @@ impl Decoder for FluvioSemVersion {
     where
         T: Buf,
     {
-        let mut version_str = String::from("");
-        version_str.decode(src, version)?;
+        let version_str = String::decode_from(src, version)?;
         let version = SemVersion::parse(&version_str)
             .map_err(|err| std::io::Error::new(std::io::ErrorKind::InvalidData, err))?;
         self.0 = version;

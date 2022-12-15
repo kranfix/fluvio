@@ -26,10 +26,9 @@ fn bench_decode_vecu8(c: &mut Criterion) {
 
     c.bench_function("vecu8 decoding", |b| {
         b.iter(|| {
-            let mut decoded_vecu8: Vec<u8> = vec![];
             let mut cursor = Cursor::new(&encoded);
-
-            decoded_vecu8.decode(&mut cursor, 0).unwrap();
+            let decoded_vecu8: Vec<u8> = Vec::decode_from(&mut cursor, 0).unwrap();
+            decoded_vecu8
         })
     });
 }
@@ -56,10 +55,9 @@ fn bench_decode_bytebuf(c: &mut Criterion) {
 
     c.bench_function("bytebuf decoding", |b| {
         b.iter(|| {
-            let mut decoded_bytebuf: ByteBuf = ByteBuf::default();
             let mut cursor = Cursor::new(&encoded);
-
-            decoded_bytebuf.decode(&mut cursor, 0).unwrap();
+            let decoded_bytebuf: ByteBuf = ByteBuf::decode_from(&mut cursor, 0).unwrap();
+            decoded_bytebuf
         })
     });
 }

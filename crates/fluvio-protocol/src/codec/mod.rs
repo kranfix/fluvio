@@ -35,8 +35,7 @@ impl Decoder for FluvioCodec {
         }
         if len >= 4 {
             let mut src = Cursor::new(&*bytes);
-            let mut packet_len: i32 = 0;
-            packet_len.decode(&mut src, 0)?;
+            let packet_len = i32::decode_from(&mut src, 0)?;
             trace!(
                 "Decoder: received buffer: {}, message size: {}",
                 len,
@@ -203,10 +202,7 @@ mod test {
                 let mut bytes = value.expect("bytes");
                 let bytes_len = bytes.len();
                 debug!("client: received bytes len: {}", bytes_len);
-                let mut decoded_value = T::default();
-                decoded_value
-                    .decode(&mut bytes, 0)
-                    .expect("decoding failed");
+                let decoded_value = T::decode_from(&mut bytes, 0).expect("decoding failed");
                 assert_eq!(bytes_len, decoded_value.write_size(0));
                 assert_eq!(decoded_value, data);
                 debug!("all test pass");

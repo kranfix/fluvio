@@ -273,8 +273,7 @@ impl<R: BatchRecords> Decoder for RecordSet<R> {
         T: Buf,
     {
         trace!(len = src.remaining(), "raw buffer size");
-        let mut len: i32 = 0;
-        len.decode(src, version)?;
+        let len = i32::decode_from(src, version)?;
         trace!(len, "Record sets decoded content");
 
         if src.remaining() < len as usize {
@@ -293,9 +292,9 @@ impl<R: BatchRecords> Decoder for RecordSet<R> {
         let mut count = 0;
         while buf.remaining() > 0 {
             trace!(count, remaining = buf.remaining(), "decoding batches");
-            let mut batch = Batch::default();
-            match batch.decode(&mut buf, version) {
-                Ok(_) => self.batches.push(batch),
+            let batch_result = Batch::decode_from(&mut buf, version);
+            match batch_result {
+                Ok(batch) => self.batches.push(batch),
                 Err(err) => match err.kind() {
                     ErrorKind::UnexpectedEof => {
                         warn!(
@@ -535,12 +534,20 @@ where
                 "not enough for record",
             ));
         }
-        self.preamble.decode(src, version)?;
+        let preamble = RecordHeader::decode_from(src, version)?;
         trace!("offset delta: {}", self.preamble.offset_delta);
-        self.key.decode(src, version)?;
-        self.value.decode(src, version)?;
-        self.headers.decode_varint(src)?;
+        let record = Self {
+            preamble,
+            key: Option::<B>::decode_from(src, version)?,
+            value: B::decode_from(src, version)?,
+            headers: {
+                let mut headers: i64 = 0;
+                headers.decode_varint(src)?;
+                headers
+            },
+        };
 
+        *self = record;
         Ok(())
     }
 }

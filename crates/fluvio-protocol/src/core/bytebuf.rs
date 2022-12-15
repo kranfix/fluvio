@@ -46,14 +46,15 @@ impl Decoder for ByteBuf {
     where
         T: Buf,
     {
-        let mut len: u32 = 0;
-        len.decode(src, version)?;
+        let len = u32::decode_from(src, version)?;
 
         if len < 1 {
             return Ok(());
         }
 
-        self.inner = src.copy_to_bytes(len as usize);
+        *self = Self {
+            inner: src.copy_to_bytes(len as usize),
+        };
 
         Ok(())
     }
@@ -201,16 +202,12 @@ mod tests {
             "the encoded output doesn't match with the expected for Vec<u8>"
         );
 
-        let mut decoded_vecu8: Vec<u8> = Vec::default();
-        decoded_vecu8
-            .decode(&mut Cursor::new(&encoded_data.clone()), 0)
+        let decoded_vecu8: Vec<u8> = Vec::decode_from(&mut Cursor::new(&encoded_data.clone()), 0)
             .expect("Failed to decode Vec<u8>");
 
         assert_eq!(decoded_vecu8.len(), 10);
 
-        let mut decoded_bytebuf: ByteBuf = ByteBuf::default();
-        decoded_bytebuf
-            .decode(&mut Cursor::new(&encoded_data.clone()), 0)
+        let decoded_bytebuf = ByteBuf::decode_from(&mut Cursor::new(&encoded_data.clone()), 0)
             .expect("Failed to decode ByteBuf");
 
         assert_eq!(decoded_bytebuf.inner.len(), 10);

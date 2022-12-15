@@ -165,31 +165,30 @@ mod custom_metadata {
         where
             T: Buf,
         {
-            let mut typ = "".to_owned();
-            typ.decode(src, version)?;
+            let typ = String::decode_from(src, version)?;
             trace!("decoded type: {}", typ);
 
-            match typ.as_ref() {
+            let spu_key = match typ.as_ref() {
                 "Name" => {
-                    let mut response = String::default();
-                    response.decode(src, version)?;
-                    *self = Self::Name(response);
-                    Ok(())
+                    let response = String::decode_from(src, version)?;
+                    Self::Name(response)
                 }
 
                 "Id" => {
-                    let mut response: i32 = 9;
-                    response.decode(src, version)?;
-                    *self = Self::Id(response);
-                    Ok(())
+                    let response = i32::decode_from(src, version)?;
+                    Self::Id(response)
                 }
 
                 // Unexpected type
-                _ => Err(Error::new(
-                    ErrorKind::InvalidData,
-                    format!("invalid spec type {}", typ),
-                )),
-            }
+                _ => {
+                    return Err(Error::new(
+                        ErrorKind::InvalidData,
+                        format!("invalid spec type {}", typ),
+                    ))
+                }
+            };
+            *self = spu_key;
+            Ok(())
         }
     }
 }

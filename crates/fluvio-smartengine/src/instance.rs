@@ -148,8 +148,7 @@ impl SmartModuleInstanceContext {
             .get()
             .and_then(|m| m.copy_memory_from(store).ok())
             .unwrap_or_default();
-        let mut output = D::default();
-        output.decode(&mut std::io::Cursor::new(bytes), self.version)?;
+        let output = D::decode_from(&mut std::io::Cursor::new(bytes), self.version)?;
         Ok(output)
     }
 }

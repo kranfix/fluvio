@@ -398,9 +398,8 @@ impl MultiPlexingResponseDispatcher {
                 frame = frame_stream.next() => {
                     if let Some(request) = frame {
                         if let Ok(mut msg) = request {
-                            let mut correlation_id: i32 = 0;
-                            match correlation_id.decode(&mut msg, 0) {
-                                Ok(_) => {
+                            match i32::decode_from(&mut msg, 0) {
+                                Ok(correlation_id) => {
                                     use bytes::Buf;
                                     debug!(correlation_id,len = msg.len(), remaining = msg.remaining(), "received frame");
 

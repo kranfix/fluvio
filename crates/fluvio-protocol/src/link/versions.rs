@@ -89,8 +89,7 @@ impl Decoder for PlatformVersion {
         T: Buf,
     {
         // Decoder the data as a String
-        let mut string = String::default();
-        string.decode(src, version)?;
+        let string = String::decode_from(src, version)?;
 
         // Before constructing, ensure that what was decoded is valid Semver
         let _version = semver::Version::parse(&string).map_err(|_| {
@@ -141,10 +140,8 @@ mod tests {
         assert_eq!(version_string_buffer, platform_version_buffer);
 
         // Check round-trip encode/decode for PlatformVersion
-        let mut decoded_platform_version = PlatformVersion::default();
-        decoded_platform_version
-            .decode(&mut (&*platform_version_buffer), 0)
-            .unwrap();
+        let decoded_platform_version =
+            PlatformVersion::decode_from(&mut (&*platform_version_buffer), 0).unwrap();
         assert_eq!(platform_version, decoded_platform_version);
     }
 
@@ -164,10 +161,8 @@ mod tests {
         let mut api_versions_buffer: Vec<u8> = vec![];
         api_version.encode(&mut api_versions_buffer, 0).unwrap();
 
-        let mut decoded_api_version = ApiVersionsResponse::default();
-        decoded_api_version
-            .decode(&mut (&*api_versions_buffer), 0)
-            .unwrap();
+        let decoded_api_version =
+            ApiVersionsResponse::decode_from(&mut (&*api_versions_buffer), 0).unwrap();
 
         assert_eq!(api_version, decoded_api_version);
     }

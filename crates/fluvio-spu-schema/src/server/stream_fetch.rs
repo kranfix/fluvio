@@ -183,10 +183,11 @@ mod tests {
             0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x04, 0xde, 0xad, 0xbe, 0xef,
             0x00, 0x00, 0x00,
         ];
-        let mut value = DefaultStreamFetchRequest::default();
-        value
-            .decode(&mut std::io::Cursor::new(bytes), CHAIN_SMARTMODULE_API)
-            .unwrap();
+        let value = DefaultStreamFetchRequest::decode_from(
+            &mut std::io::Cursor::new(bytes),
+            CHAIN_SMARTMODULE_API,
+        )
+        .unwrap();
         assert_eq!(value.topic, "one");
         assert_eq!(value.partition, 3);
         let sm = match value.smartmodules.first() {

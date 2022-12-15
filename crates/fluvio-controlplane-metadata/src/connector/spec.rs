@@ -65,18 +65,15 @@ impl ToString for ConnectorVersionInner {
 
 impl Decoder for ConnectorVersionInner {
     fn decode<T: Buf>(&mut self, src: &mut T, version: Version) -> Result<(), std::io::Error> {
-        if version >= 9 {
-            let mut new_string = String::new();
-            new_string.decode(src, version)?;
-            *self = ConnectorVersionInner::String(new_string);
-
-            Ok(())
+        let version = if version >= 9 {
+            let new_string = String::decode_from(src, version)?;
+            ConnectorVersionInner::String(new_string)
         } else {
-            let mut inner: Option<String> = None;
-            inner.decode(src, version)?;
-            *self = ConnectorVersionInner::Option(inner);
-            Ok(())
-        }
+            let inner: Option<String> = Option::decode_from(src, version)?;
+            ConnectorVersionInner::Option(inner)
+        };
+        *self = version;
+        Ok(())
     }
 }
 impl Encoder for ConnectorVersionInner {
@@ -288,14 +285,14 @@ impl From<String> for ManagedConnectorParameterValue {
 
 impl Decoder for ManagedConnectorParameterValue {
     fn decode<T: Buf>(&mut self, src: &mut T, version: Version) -> Result<(), std::io::Error> {
-        if version >= 8 {
-            self.0.decode(src, version)
+        let parameter = if version >= 8 {
+            ManagedConnectorParameterValueInner::decode_from(src, version)?
         } else {
-            let mut new_string = String::new();
-            new_string.decode(src, version)?;
-            self.0 = ManagedConnectorParameterValueInner::String(new_string);
-            Ok(())
-        }
+            let new_string = String::decode_from(src, version)?;
+            ManagedConnectorParameterValueInner::String(new_string)
+        };
+        *self = Self(parameter);
+        Ok(())
     }
 }
 impl Encoder for ManagedConnectorParameterValue {

@@ -434,18 +434,15 @@ impl Decoder for CustomSpu {
     where
         T: Buf,
     {
-        let mut value: u8 = 0;
-        value.decode(src, version)?;
-        match value {
+        let value = u8::decode_from(src, version)?;
+        let spu = match value {
             0 => {
-                let mut name: String = String::default();
-                name.decode(src, version)?;
-                *self = Self::Name(name)
+                let name = String::decode_from(src, version)?;
+                Self::Name(name)
             }
             1 => {
-                let mut id: i32 = 0;
-                id.decode(src, version)?;
-                *self = Self::Id(id)
+                let id = i32::decode_from(src, version)?;
+                Self::Id(id)
             }
             _ => {
                 return Err(IoError::new(
@@ -453,8 +450,8 @@ impl Decoder for CustomSpu {
                     format!("invalid value for Custom Spu: {}", value),
                 ))
             }
-        }
-
+        };
+        *self = spu;
         Ok(())
     }
 }

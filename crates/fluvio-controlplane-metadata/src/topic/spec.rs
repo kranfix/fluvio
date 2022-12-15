@@ -72,12 +72,10 @@ impl Decoder for TopicSpec {
     {
         if version < 3 {
             debug!("decoding classic TopicSpec");
-            let mut replicas = ReplicaSpec::default();
-            replicas.decode(src, version)?;
+            let replicas = ReplicaSpec::decode_from(src, version)?;
             self.inner.replicas = replicas;
         } else {
-            let mut inner = TopicSpecInner::default();
-            inner.decode(src, version)?;
+            let inner = TopicSpecInner::decode_from(src, version)?;
             self.inner = inner;
         }
 
@@ -364,33 +362,32 @@ impl Decoder for ReplicaSpec {
     where
         T: Buf,
     {
-        let mut typ: u8 = 0;
-        typ.decode(src, version)?;
+        let typ = u8::decode_from(src, version)?;
         trace!("decoded type: {}", typ);
 
-        match typ {
+        let replica_spec = match typ {
             // Assigned Replicas
             0 => {
-                let mut partition_map = PartitionMaps::default();
-                partition_map.decode(src, version)?;
-                *self = Self::Assigned(partition_map);
-                Ok(())
+                let partition_map = PartitionMaps::decode_from(src, version)?;
+                Self::Assigned(partition_map)
             }
 
             // Computed Replicas
             1 => {
-                let mut param = TopicReplicaParam::default();
-                param.decode(src, version)?;
-                *self = Self::Computed(param);
-                Ok(())
+                let param = TopicReplicaParam::decode_from(src, version)?;
+                Self::Computed(param)
             }
 
             // Unexpected type
-            _ => Err(Error::new(
-                ErrorKind::UnexpectedEof,
-                format!("unknown replica type {}", typ),
-            )),
-        }
+            _ => {
+                return Err(Error::new(
+                    ErrorKind::UnexpectedEof,
+                    format!("unknown replica type {}", typ),
+                ))
+            }
+        };
+        *self = replica_spec;
+        Ok(())
     }
 }
 
@@ -988,13 +985,14 @@ pub mod test {
         ];
         assert_eq!(dest, expected_dest);
 
-        // test encode
-        let mut topic_spec_decoded = ReplicaSpec::default();
-        let result = topic_spec_decoded.decode(&mut Cursor::new(&expected_dest), 0);
-        assert!(result.is_ok());
+        let mut cursor = Cursor::new(&expected_dest);
 
-        match topic_spec_decoded {
-            ReplicaSpec::Assigned(partition_map) => {
+        // test encode
+        let topic_spec_decoded_result = ReplicaSpec::decode_from(&mut cursor, 0);
+        assert!(topic_spec_decoded_result.is_ok());
+
+        match topic_spec_decoded_result {
+            Ok(ReplicaSpec::Assigned(partition_map)) => {
                 assert_eq!(
                     partition_map,
                     vec![PartitionMap {
@@ -1004,7 +1002,10 @@ pub mod test {
                     .into()
                 );
             }
-            _ => panic!("expect assigned topic spec, found {:?}", topic_spec_decoded),
+            _ => panic!(
+                "expect assigned topic spec, found {:?}",
+                ReplicaSpec::default()
+            ),
         }
     }
 
@@ -1025,18 +1026,21 @@ pub mod test {
         ];
         assert_eq!(dest, expected_dest);
 
+        let mut cursor = Cursor::new(&expected_dest);
         // test encode
-        let mut topic_spec_decoded = ReplicaSpec::default();
-        let result = topic_spec_decoded.decode(&mut Cursor::new(&expected_dest), 0);
-        assert!(result.is_ok());
+        let topic_spec_decoded_result = ReplicaSpec::decode_from(&mut cursor, 0);
+        assert!(topic_spec_decoded_result.is_ok());
 
-        match topic_spec_decoded {
-            ReplicaSpec::Computed(param) => {
+        match topic_spec_decoded_result {
+            Ok(ReplicaSpec::Computed(param)) => {
                 assert_eq!(param.partitions, 2);
                 assert_eq!(param.replication_factor, 3);
                 assert!(param.ignore_rack_assignment);
             }
-            _ => panic!("expect computed topic spec, found {:?}", topic_spec_decoded),
+            _ => panic!(
+                "expect computed topic spec, found {:?}",
+                ReplicaSpec::default()
+            ),
         }
     }
 

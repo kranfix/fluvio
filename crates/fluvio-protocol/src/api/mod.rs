@@ -76,8 +76,7 @@ mod common {
             let data = buffer.to_vec();
             let mut src = Cursor::new(&data);
 
-            let mut size: i32 = 0;
-            size.decode(&mut src, 0)?;
+            let size = i32::decode_from(&mut src, 0)?;
             trace!("decoded request size: {} bytes", size);
 
             if src.remaining() < size as usize {

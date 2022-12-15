@@ -176,8 +176,7 @@ fn generate_decode_enum_impl(
                         let var_ty = &prop.field_type;
                         // Type will be inferred when used to construct parent
                         let decode = quote! {
-                            let mut #var_ident: #var_ty = Default::default();
-                            #var_ident.decode(src, version)?;
+                            let #var_ident: #var_ty = Decoder::decode_from(src, version)?;
                         };
                         (decode, var_ident)
                     })
@@ -199,8 +198,7 @@ fn generate_decode_enum_impl(
                         let var_ty = &prop.field_type;
                         // Type will be inferred when used to construct parent
                         let decode = quote! {
-                            let mut #var_ident: #var_ty = Default::default();
-                            #var_ident.decode(src, version)?;
+                            let mut #var_ident: #var_ty = Decoder::decode_from(src, version)?;
                         };
                         (decode, var_ident)
                     })
@@ -236,8 +234,7 @@ fn generate_decode_enum_impl(
     });
 
     let output = quote! {
-        let mut typ: #int_type = 0;
-        typ.decode(src, version)?;
+        let typ = #int_type::decode_from(src, version)?;
         tracing::trace!("decoded type: {}", typ);
 
         match typ {
@@ -283,8 +280,7 @@ fn generate_try_enum_from_kf_enum(
                     let field_ident = &field.ident;
                     let var_ident = format_ident!("res_{}", idx);
                     decode_variant_fields.push(quote! {
-                        let mut #var_ident = #field_ident::default();
-                        #var_ident.decode(src, version)?;
+                        let #var_ident: #field_ident = Decoder::decode_from(src, version)?;
                     });
                 }
                 let mut variant_construction_params = vec![];
@@ -305,8 +301,7 @@ fn generate_try_enum_from_kf_enum(
                     let field_ident = &field.ident;
                     let var_ident = format_ident!("res_{}", idx);
                     decode_variant_fields.push(quote! {
-                        let mut #var_ident = #field_ident::default();
-                        #var_ident.decode(src, version)?;
+                        let #var_ident: #field_ident= Decoder::decode_from(src, version)?;
                     });
                 }
                 let mut variant_construction_params = vec![];

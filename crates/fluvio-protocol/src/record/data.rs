@@ -197,9 +197,7 @@ impl Decoder for RecordData {
     {
         trace!("decoding default asyncbuffer");
 
-        let mut len: i64 = 0;
-        len.decode_varint(src)?;
-        let len = len as usize;
+        let len = i64::decode_varint_from(src)? as usize;
 
         // Take `len` bytes from `src` and put them into a new BytesMut buffer
         let slice = src.take(len);
@@ -523,8 +521,7 @@ where
         T: Buf,
     {
         trace!("decoding record");
-        let mut len: i64 = 0;
-        len.decode_varint(src)?;
+        let len = i64::decode_varint_from(src)?;
 
         trace!("record contains: {} bytes", len);
 
@@ -540,11 +537,7 @@ where
             preamble,
             key: Option::<B>::decode_from(src, version)?,
             value: B::decode_from(src, version)?,
-            headers: {
-                let mut headers: i64 = 0;
-                headers.decode_varint(src)?;
-                headers
-            },
+            headers: i64::decode_varint_from(src)?,
         };
 
         *self = record;

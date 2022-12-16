@@ -75,15 +75,18 @@ pub(crate) fn generate_struct_named_fields(
 ) -> TokenStream {
     let recurse = props.iter().map(|prop| {
         let fname = format_ident!("{}", prop.field_name);
+        let ftype = &prop.field_type;
         if prop.attrs.varint {
             quote! {
                 tracing::trace!("start decoding varint field <{}>", stringify!(#fname));
-                let result = self.#fname.decode_varint(src);
-                if result.is_ok() {
+
+                let result = #ftype::decode_varint_from(src);
+                if let Ok(variant) = result {
+                    self.#fname = variant;
                     tracing::trace!("decoding ok varint <{}> => {:?}",stringify!(#fname),&self.#fname);
                 } else {
                     tracing::trace!("decoding varint error <{}> ==> {}",stringify!(#fname),result.as_ref().unwrap_err());
-                    return result;
+                    result?;
                 }
             }
         } else {

@@ -30,8 +30,8 @@ pub trait Decoder: Sized + Default {
         T: Buf;
 }
 
-pub trait DecoderVarInt {
-    fn decode_varint<T>(&mut self, src: &mut T) -> Result<(), Error>
+pub trait DecoderVarInt: Sized {
+    fn decode_varint_from<T>(src: &mut T) -> Result<Self, Error>
     where
         T: Buf;
 }
@@ -275,13 +275,12 @@ impl Decoder for i64 {
 }
 
 impl DecoderVarInt for i64 {
-    fn decode_varint<T>(&mut self, src: &mut T) -> Result<(), Error>
+    fn decode_varint_from<T>(src: &mut T) -> Result<i64, Error>
     where
         T: Buf,
     {
         let (value, _) = varint_decode(src)?;
-        *self = value;
-        Ok(())
+        Ok(value)
     }
 }
 
@@ -321,31 +320,31 @@ impl Decoder for String {
 }
 
 impl DecoderVarInt for Vec<u8> {
-    fn decode_varint<T>(&mut self, src: &mut T) -> Result<(), Error>
+    fn decode_varint_from<T>(src: &mut T) -> Result<Vec<u8>, Error>
     where
         T: Buf,
     {
-        let mut len: i64 = 0;
-        len.decode_varint(src)?;
+        let mut vec = Vec::new();
+        let len = i64::decode_varint_from(src)?;
 
         if len < 1 {
-            return Ok(());
+            return Ok(vec);
         }
 
         let mut buf = src.take(len as usize);
-        self.put(&mut buf);
-        if self.len() != len as usize {
+        vec.put(&mut buf);
+        if vec.len() != len as usize {
             return Err(Error::new(
                 ErrorKind::UnexpectedEof,
                 format!(
                     "varint: Vec<u8>>, expecting {} but received: {}",
                     len,
-                    self.len()
+                    vec.len()
                 ),
             ));
         }
 
-        Ok(())
+        Ok(vec)
     }
 }
 
@@ -383,14 +382,14 @@ where
 }
 
 impl DecoderVarInt for Option<Vec<u8>> {
-    fn decode_varint<T>(&mut self, src: &mut T) -> Result<(), Error>
+    fn decode_varint_from<T>(src: &mut T) -> Result<Self, Error>
     where
         T: Buf,
     {
-        let mut len: i64 = 0;
-        len.decode_varint(src)?;
-
-        decode_option_vec_u(self, src, len as isize)
+        let len = i64::decode_varint_from(src)?;
+        let mut variant = None;
+        decode_option_vec_u(&mut variant, src, len as isize)?;
+        Ok(variant)
     }
 }
 
@@ -710,19 +709,17 @@ mod test {
     fn test_decode_varint_trait() {
         let data = [0x7e];
 
-        let mut value: i64 = 0;
-        let result = value.decode_varint(&mut Cursor::new(&data));
-        assert!(result.is_ok());
-        assert_eq!(value, 63);
+        let result = i64::decode_varint_from(&mut Cursor::new(&data));
+        assert!(matches!(result, Ok(63)));
     }
 
     #[test]
     fn test_decode_varint_vec8() {
         let data = [0x06, 0x64, 0x6f, 0x67];
 
-        let mut value: Vec<u8> = Vec::new();
-        let result = value.decode_varint(&mut Cursor::new(&data));
+        let result = Vec::<u8>::decode_varint_from(&mut Cursor::new(&data));
         assert!(result.is_ok());
+        let value = result.unwrap();
         assert_eq!(value.len(), 3);
         assert_eq!(value[0], 0x64);
     }
@@ -740,22 +737,16 @@ mod test {
     fn test_decode_varint_vec8_fail() {
         let data = [0x06, 0x64, 0x6f];
 
-        let mut value: Vec<u8> = Vec::new();
-        let result = value.decode_varint(&mut Cursor::new(&data));
-        assert!(result.is_err());
+        let result = Vec::<u8>::decode_varint_from(&mut Cursor::new(&data));
+        assert!(matches!(result, Err(_)));
     }
 
     #[test]
     fn test_varint_decode_array_opton_vec8_simple_array() {
         let data = [0x06, 0x64, 0x6f, 0x67, 0x00]; // should only read first 3
 
-        let mut value: Option<Vec<u8>> = Some(Vec::new());
-        let result = value.decode_varint(&mut Cursor::new(&data));
-        assert!(result.is_ok());
-        assert!(value.is_some());
-        let array = value.unwrap();
-        assert_eq!(array.len(), 3);
-        assert_eq!(array[0], 0x64);
+        let result = Option::<Vec<u8>>::decode_varint_from(&mut Cursor::new(&data));
+        assert!(matches!(result, Ok(Some(array)) if array.len() == 3 && array[0] == 0x64));
     }
 
     #[derive(Default)]

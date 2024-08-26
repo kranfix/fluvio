@@ -132,6 +132,19 @@ impl<R> Decoder for RequestMessage<R>
 where
     R: Request,
 {
+    fn decode_from<T>(
+        src: &mut T,
+        version: fluvio_protocol::Version,
+    ) -> Result<Self, std::io::Error>
+    where
+        T: fluvio_protocol::bytes::Buf,
+        Self: Default,
+    {
+        let mut decoder = Self::default();
+        decoder.decode(src, version)?;
+        Ok(decoder)
+    }
+
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), IoError>
     where
         T: Buf,

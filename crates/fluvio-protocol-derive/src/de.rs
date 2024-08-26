@@ -22,6 +22,17 @@ pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
             let (impl_generics, ty_generics, where_clause) = kf_struct.generics().split_for_impl();
             quote! {
                 impl #impl_generics fluvio_protocol::Decoder for #ident #ty_generics #where_clause {
+                    // TODO(kranfix): remove when Decoder does not depend on Default
+                    fn decode_from<T>(src: &mut T, version: fluvio_protocol::Version) -> Result<Self, std::io::Error>
+                    where
+                        T: fluvio_protocol::bytes::Buf,
+                        Self: Default,
+                    {
+                        let mut decoder = Self::default();
+                        decoder.decode(src, version)?;
+                        Ok(decoder)
+                    }
+
                     fn decode<T>(&mut self, src: &mut T,version: fluvio_protocol::Version) -> Result<(),std::io::Error> where T: fluvio_protocol::bytes::Buf {
                         tracing::trace!("decoding struct: {}",stringify!(#ident));
                         #field_tokens
@@ -42,6 +53,17 @@ pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
             let try_enum = generate_try_enum_from_kf_enum(&kf_enum.props, &int_type, ident, attrs);
             let res = quote! {
                 impl #impl_generics fluvio_protocol::Decoder for #ident #ty_generics #where_clause {
+                     // TODO(kranfix): remove when Decoder does not depend on Default
+                     fn decode_from<T>(src: &mut T, version: fluvio_protocol::Version) -> Result<Self, std::io::Error>
+                     where
+                         T: fluvio_protocol::bytes::Buf,
+                         Self: Default,
+                     {
+                         let mut decoder = Self::default();
+                         decoder.decode(src, version)?;
+                         Ok(decoder)
+                     }
+
                     fn decode<T>(&mut self, src: &mut T,version: fluvio_protocol::Version) -> Result<(),std::io::Error> where T: fluvio_protocol::bytes::Buf {
                         #enum_tokens
                         Ok(())

@@ -51,10 +51,10 @@ impl Encoder for RawRecords {
 }
 
 impl Decoder for RawRecords {
-    fn decode<T: Buf>(&mut self, buf: &mut T, _version: Version) -> Result<(), Error> {
+    fn decode_from<T: Buf>(buf: &mut T, _version: Version) -> Result<RawRecords, Error> {
         let len = buf.remaining();
-        self.0 = buf.copy_to_bytes(len);
-        Ok(())
+        let bytes: Bytes = buf.copy_to_bytes(len);
+        Ok(RawRecords(bytes))
     }
 }
 impl BatchRecords for MemoryRecords {}

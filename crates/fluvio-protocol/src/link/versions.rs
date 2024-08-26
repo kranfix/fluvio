@@ -84,7 +84,7 @@ impl Default for PlatformVersion {
 
 impl Decoder for PlatformVersion {
     /// Wrap the decoder for the string inside
-    fn decode<T>(&mut self, src: &mut T, version: i16) -> Result<(), IoError>
+    fn decode_from<T>(src: &mut T, version: i16) -> Result<PlatformVersion, IoError>
     where
         T: Buf,
     {
@@ -100,8 +100,7 @@ impl Decoder for PlatformVersion {
         })?;
 
         // Construct PlatformVersion with semver string
-        self.0 = string;
-        Ok(())
+        Ok(PlatformVersion(string))
     }
 }
 

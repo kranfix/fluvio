@@ -17,17 +17,15 @@ pub trait Decoder: Sized + Default {
     /// decode Fluvio compliant protocol values from buf
     fn decode_from<T>(src: &mut T, version: Version) -> Result<Self, Error>
     where
-        T: Buf,
-        Self: Default,
-    {
-        let mut decoder = Self::default();
-        decoder.decode(src, version)?;
-        Ok(decoder)
-    }
+        T: Buf;
 
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where
-        T: Buf;
+        T: Buf,
+    {
+        *self = Self::decode_from(src, version)?;
+        Ok(())
+    }
 }
 
 pub trait DecoderVarInt: Sized {
@@ -40,22 +38,22 @@ impl<M> Decoder for Vec<M>
 where
     M: Decoder,
 {
-    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
+    fn decode_from<T>(src: &mut T, version: Version) -> Result<Vec<M>, Error>
     where
         T: Buf,
     {
         let len = i32::decode_from(src, version)?;
 
         trace!("decoding Vec len:{}", len);
-
+        let mut vec = Vec::new();
         if len < 1 {
             trace!("negative length, skipping");
-            return Ok(());
+            return Ok(vec);
         }
 
-        decode_vec(len, self, src, version)?;
+        decode_vec(len, &mut vec, src, version)?;
 
-        Ok(())
+        Ok(vec)
     }
 }
 
@@ -76,7 +74,7 @@ impl<M> Decoder for Option<M>
 where
     M: Decoder,
 {
-    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
+    fn decode_from<T>(src: &mut T, version: Version) -> Result<Option<M>, Error>
     where
         T: Buf,
     {
@@ -87,8 +85,7 @@ where
         } else {
             None
         };
-        *self = option;
-        Ok(())
+        Ok(option)
     }
 }
 
@@ -96,11 +93,11 @@ impl<M> Decoder for PhantomData<M>
 where
     M: Decoder,
 {
-    fn decode<T>(&mut self, _src: &mut T, _version: Version) -> Result<(), Error>
+    fn decode_from<T>(_src: &mut T, _version: Version) -> Result<Self, Error>
     where
         T: Buf,
     {
-        Ok(())
+        Ok(PhantomData::<M>)
     }
 }
 
@@ -109,7 +106,7 @@ where
     K: Decoder + Ord,
     V: Decoder,
 {
-    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
+    fn decode_from<T>(src: &mut T, version: Version) -> Result<Self, Error>
     where
         T: Buf,
     {
@@ -122,13 +119,12 @@ where
             map.insert(key, value);
         }
 
-        *self = map;
-        Ok(())
+        Ok(map)
     }
 }
 
 impl Decoder for bool {
-    fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
+    fn decode_from<T>(src: &mut T, _version: Version) -> Result<bool, Error>
     where
         T: Buf,
     {
@@ -141,19 +137,15 @@ impl Decoder for bool {
         let value = src.get_u8();
 
         match value {
-            0 => *self = false,
-            1 => *self = true,
-            _ => {
-                return Err(Error::new(ErrorKind::InvalidData, "not valid bool value"));
-            }
-        };
-
-        Ok(())
+            0 => Ok(false),
+            1 => Ok(true),
+            _ => Err(Error::new(ErrorKind::InvalidData, "not valid bool value")),
+        }
     }
 }
 
 impl Decoder for i8 {
-    fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
+    fn decode_from<T>(src: &mut T, _version: Version) -> Result<i8, Error>
     where
         T: Buf,
     {
@@ -164,13 +156,12 @@ impl Decoder for i8 {
             ));
         }
         let value = src.get_i8();
-        *self = value;
-        Ok(())
+        Ok(value)
     }
 }
 
 impl Decoder for u8 {
-    fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
+    fn decode_from<T>(src: &mut T, _version: Version) -> Result<u8, Error>
     where
         T: Buf,
     {
@@ -181,13 +172,12 @@ impl Decoder for u8 {
             ));
         }
         let value = src.get_u8();
-        *self = value;
-        Ok(())
+        Ok(value)
     }
 }
 
 impl Decoder for i16 {
-    fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
+    fn decode_from<T>(src: &mut T, _version: Version) -> Result<i16, Error>
     where
         T: Buf,
     {
@@ -195,13 +185,12 @@ impl Decoder for i16 {
             return Err(Error::new(ErrorKind::UnexpectedEof, "can't read i16"));
         }
         let value = src.get_i16();
-        *self = value;
-        Ok(())
+        Ok(value)
     }
 }
 
 impl Decoder for u16 {
-    fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
+    fn decode_from<T>(src: &mut T, _version: Version) -> Result<u16, Error>
     where
         T: Buf,
     {
@@ -209,13 +198,12 @@ impl Decoder for u16 {
             return Err(Error::new(ErrorKind::UnexpectedEof, "can't read u16"));
         }
         let value = src.get_u16();
-        *self = value;
-        Ok(())
+        Ok(value)
     }
 }
 
 impl Decoder for i32 {
-    fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
+    fn decode_from<T>(src: &mut T, _version: Version) -> Result<i32, Error>
     where
         T: Buf,
     {
@@ -224,13 +212,12 @@ impl Decoder for i32 {
         }
         let value = src.get_i32();
         trace!("i32: {:#x} => {}", &value, &value);
-        *self = value;
-        Ok(())
+        Ok(value)
     }
 }
 
 impl Decoder for u32 {
-    fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
+    fn decode_from<T>(src: &mut T, _version: Version) -> Result<u32, Error>
     where
         T: Buf,
     {
@@ -239,13 +226,12 @@ impl Decoder for u32 {
         }
         let value = src.get_u32();
         trace!("u32: {:#x} => {}", &value, &value);
-        *self = value;
-        Ok(())
+        Ok(value)
     }
 }
 
 impl Decoder for u64 {
-    fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
+    fn decode_from<T>(src: &mut T, _version: Version) -> Result<u64, Error>
     where
         T: Buf,
     {
@@ -254,13 +240,12 @@ impl Decoder for u64 {
         }
         let value = src.get_u64();
         trace!("u64: {:#x} => {}", &value, &value);
-        *self = value;
-        Ok(())
+        Ok(value)
     }
 }
 
 impl Decoder for i64 {
-    fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
+    fn decode_from<T>(src: &mut T, _version: Version) -> Result<i64, Error>
     where
         T: Buf,
     {
@@ -269,8 +254,7 @@ impl Decoder for i64 {
         }
         let value = src.get_i64();
         trace!("i64: {:#x} => {}", &value, &value);
-        *self = value;
-        Ok(())
+        Ok(value)
     }
 }
 
@@ -298,7 +282,7 @@ where
 }
 
 impl Decoder for String {
-    fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
+    fn decode_from<T>(src: &mut T, _version: Version) -> Result<String, Error>
     where
         T: Buf,
     {
@@ -310,12 +294,11 @@ impl Decoder for String {
         }
         let len = src.get_i16();
         if len <= 0 {
-            return Ok(());
+            return Ok(String::new());
         }
 
         let value = decode_string(len, src)?;
-        *self = value;
-        Ok(())
+        Ok(value)
     }
 }
 

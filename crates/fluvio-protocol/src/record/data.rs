@@ -266,7 +266,7 @@ impl<R: BatchRecords> RecordSet<R> {
 }
 
 impl<R: BatchRecords> Decoder for RecordSet<R> {
-    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
+    fn decode_from<T>(src: &mut T, version: Version) -> Result<Self, Error>
     where
         T: Buf,
     {
@@ -516,7 +516,7 @@ impl<B> Decoder for Record<B>
 where
     B: Decoder,
 {
-    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
+    fn decode_from<T>(src: &mut T, version: Version) -> Result<(), Error>
     where
         T: Buf,
     {

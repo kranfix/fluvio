@@ -42,21 +42,21 @@ impl Deref for ByteBuf {
 }
 
 impl Decoder for ByteBuf {
-    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
+    fn decode_from<T>(src: &mut T, version: Version) -> Result<ByteBuf, Error>
     where
         T: Buf,
     {
         let len = u32::decode_from(src, version)?;
 
         if len < 1 {
-            return Ok(());
+            return Ok(ByteBuf::default());
         }
 
-        *self = Self {
+        let buf = ByteBuf {
             inner: src.copy_to_bytes(len as usize),
         };
 
-        Ok(())
+        Ok(buf)
     }
 }
 
